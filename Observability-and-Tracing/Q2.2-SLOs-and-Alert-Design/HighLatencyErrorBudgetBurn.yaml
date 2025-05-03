@@ -1,0 +1,26 @@
+groups:
+- name: checkout-slo-alerts
+  rules:
+  - alert: HighLatencyErrorBudgetBurn
+    expr: |
+      (
+        (
+          (1 - (sum(rate(http_request_duration_seconds_bucket{le="0.3", endpoint="/checkout"}[5m]))
+           /
+           sum(rate(http_request_duration_seconds_count{endpoint="/checkout"}[5m]))))
+          > (1 - 0.99) * 14
+        )
+        or
+        (
+          (1 - (sum(rate(http_request_duration_seconds_bucket{le="0.3", endpoint="/checkout"}[1h]))
+           /
+           sum(rate(http_request_duration_seconds_count{endpoint="/checkout"}[1h]))))
+          > (1 - 0.99) * 6
+        )
+      )
+    for: 5m
+    labels:
+      severity: critical
+    annotations:
+      summary: "Latency SLO burn rate too high for /checkout"
+      description: "High error budget burn for latency on /checkout. Investigate latency spikes. SLO: 99% of requests <300ms."
